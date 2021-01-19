@@ -37,3 +37,7 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Preparation and assessment problem files
+*.docx
+vaccination_tweets.csv

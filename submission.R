@@ -12,22 +12,22 @@ library(ggplot2)
 #################################
 # Task 1: Combine three data frames
 
-list.files(path = "./input")
+list.files(path = "./assessment/input")
 # [1] "Admissions.csv"   "Lab.csv"          "Transfusions.csv"
 
-admission <- read.csv("input/Admissions.csv", header = TRUE, sep = ",", dec = ".")
+admission <- read.csv("assessment/input/Admissions.csv", header = TRUE, sep = ",", dec = ".")
 head(admission, 1)
 #   admission_id patient_id admission_date admission_time discharge_date discharge_time                   hospital age sex
 # 1         3602      34208     2011-09-07           <NA>     09/11/2011          13:16 St. Joseph's Health Centre  NA   M
 #   charlson_comorbidity_index lap_score
 # 1                          1        45
 
-lab <- read.csv("input/Lab.csv", header = TRUE, sep = ",", dec = ".")
+lab <- read.csv("assessment/input/Lab.csv", header = TRUE, sep = ",", dec = ".")
 head(lab, 1)
 #   admission_id test_name test_code result_unit result_value result_date result_time
 # 1         4416   Albumin       ALB        g/dL          4.1  2003-08-19       02:25
 
-transfusion <- read.csv("input/Transfusions.csv", header = TRUE, sep = ",", dec = ".")
+transfusion <- read.csv("assessment/input/Transfusions.csv", header = TRUE, sep = ",", dec = ".")
 head(transfusion, 1)
 #   admission_id issue_date issue_time rbc_transfusion platelet_transfusion plasma_transfusion
 # 1         8755 2002-08-25      16:05           FALSE                FALSE               TRUE
@@ -58,11 +58,11 @@ sum(is.na(all_df$charlson_comorbidity_index)) # the number of data points where 
 sum(is.na(all_df$charlson_comorbidity_index))/nrow(all_df) # the ratio of data where charlson_comorbidity_index is missing
 # [1] 0.04989486
 
-sum(is.na(all_df$age) & is.na(all_df$charlson_comorbidity_index)) # the number of data points where both variables are missing
+sum(is.na(all_df$age) | is.na(all_df$charlson_comorbidity_index)) # the number of data points where both variables are missing
 # [1] 33
 
-# Explain hot the imputation method(s) might affect a statistical model that uses these variables as predictor
-# The records where there is missing predictor would have to be dropped; thus, reducing the sample size of the analysis.
+# Explain how the imputation method(s) might affect a statistical model that uses these variables as predictors
+# Answer: Any records where there is a missing predictor would have to be dropped; thus, reducing the sample size of the analysis.
 
 #################################
 # Task 3: Determine if there is a difference in age/sex between patients who had an rbc_transfusion and patients that did not.
@@ -110,9 +110,11 @@ chisq.test(tbl)
 #################################
 # Task 4: Fit a linear regression model 
 # using the result_value of the “Platelet Count” lab tests as the dependent variable and 
-# age, sex, and hospital as the independent variables. Interpret the results
+# age, sex, and hospital as the independent variables. Interpret the results.
 
-model <- lm(result_value ~ age + as.factor(sex) + as.factor(hospital), data = all_df)
+new_df <- all_df %>% filter(test_name == "Platelet Count")
+  
+model <- lm(result_value ~ age + as.factor(sex) + as.factor(hospital), data = new_df)
 summary(model)
 # 
 # Call:
@@ -120,64 +122,79 @@ summary(model)
 #      data = all_df)
 # 
 # Residuals:
-#    Min     1Q Median     3Q    Max 
-# -94.57 -75.01 -34.65  59.46 513.31 
+#     Min      1Q  Median      3Q     Max 
+# -167.72  -46.78   -3.55   45.25  204.51  
 #
 # Coefficients:
 #                                                      Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                                           86.3092    18.6890   4.618 4.03e-06 ***
-# age                                                   -0.2743     0.3307  -0.830    0.407    
-# as.factor(sex)M                                       14.0552     3.3791   4.159 3.27e-05 ***
-# as.factor(hospital)St. Joseph's Health Centre          4.1695     6.4949   0.642    0.521    
-# as.factor(hospital)St. Michael's Hospital              4.3264     5.4462   0.794    0.427    
-# as.factor(hospital)Sunnybrook Health Sciences Centre   0.9656     5.5986   0.172    0.863    
-# as.factor(hospital)Toronto Western Hospital            7.8805     5.7261   1.376    0.169    
+# (Intercept)                                          286.0462    47.9540   5.965  7.8e-09 ***
+# age                                                   -2.0445     0.8535  -2.395  0.01730 *  
+# as.factor(sex)M                                       31.5331     8.5404   3.692  0.00027 ***
+# as.factor(hospital)St. Joseph's Health Centre          0.8819    15.2549   0.058  0.95394    
+# as.factor(hospital)St. Michael's Hospital             -0.4617    13.3543  -0.035  0.97245    
+# as.factor(hospital)Sunnybrook Health Sciences Centre   2.8307    14.1147   0.201  0.84121    
+# as.factor(hospital)Toronto Western Hospital           -6.9817    14.3139  -0.488  0.62612    
 # ---
 # Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #
-# Residual standard error: 95 on 3172 degrees of freedom
-# (2052 observations deleted due to missingness)
-# Multiple R-squared:  0.006451,	Adjusted R-squared:  0.004571 
-# F-statistic: 3.432 on 6 and 3172 DF,  p-value: 0.002218
+# Residual standard error: 69.41 on 265 degrees of freedom
+# (42 observations deleted due to missingness)
+# Multiple R-squared:  0.06697,	Adjusted R-squared:  0.04584 
+# F-statistic:  3.17 on 6 and 265 DF,  p-value: 0.005084
 #
 # Answer: the fitted linear regression model is ...
-# ... result_value = 86.31 - 0.27*age + 14.06*sex + 4.17*hospital1 + 4.33*hospital2 + 0.97*hospital3 + 7.88*hospital4
+# ... result_value = 286 - 2*age + 31.5*sex + 0.88*hospital1 - 0.46*hospital2 + 2.83*hospital3 - 6.98*hospital4
 # where sex is a binary variable (female: sex = 0, male: sex = 1)
 # Note that neither age nor hospital did not significantly affect the result_value but sex did.
 
 #################################
 # Task 5: Create a plot demonstrating the relationship between length_of_stay and charlson_comorbidity_index
 
-all_df <- mutate(all_df, length_of_stay =
-                   as.numeric(discharge_date) - as.numeric(admission_date) + 
-                   as.numeric(discharge_time) - as.numeric(admission_time))
+new_df <- na.omit(admission)
 
-ggplot(data = all_df) + geom_point(aes(x = length_of_stay, y = charlson_comorbidity_index))
+new_df <- mutate(new_df, 
+                 length_of_stay =
+                   difftime(strptime( paste(new_df$discharge_date, new_df$discharge_time), "%m/%d/%Y %H:%M"),
+                            strptime( paste(new_df$admission_date, new_df$admission_time), "%Y-%m-%d %H:%M"),
+                            units = "mins"))
+new_df <- new_df %>% filter(length_of_stay >= 0)
 
-# If adding age, the visualization may be faceted with age group.
+summary(new_df$charlson_comorbidity_index)
+#    0    1   2+ 
+# 1181 1352 1265 
+
+ggplot(data = new_df) + geom_point(aes(x = length_of_stay, y = charlson_comorbidity_index))
+
+# If adding age, the visualization may be faceted with age groups.
+# Other option is to have charlson_comobidity_index as legend and plot x as age and y as length_of_stay.
+ggplot(data = new_df, aes(x = age, y = length_of_stay, group = charlson_comorbidity_index)) + 
+  geom_point(aes(color = charlson_comorbidity_index)) +
+  facet_grid(cols = vars(charlson_comorbidity_index))
 
 #################################
 # Task 6: Fit statistical model to predict the result_value of the “Hemoglobin” lab tests and evaluate its performance
-new_df <- na.omit(all_df)
+
+new_df <- all_df %>% filter(test_name == "Platelet Count")
+
 model <- lm(result_value ~ age + as.factor(sex) + as.factor(hospital) + charlson_comorbidity_index, data = new_df)
 step <- stepAIC(model)
-# Start:  AIC=3008.16
+# Start:  AIC=2174.64
 # result_value ~ age + as.factor(sex) + as.factor(hospital) + charlson_comorbidity_index
+# 
+#Df Sum of Sq     RSS    AIC
+# - as.factor(hospital)         4      6477 1207501 2168.0
+# - charlson_comorbidity_index  2      1855 1202878 2171.0
+# <none>                                    1201023 2174.6
+# - age                         1     23673 1224697 2177.6
+# - as.factor(sex)              1     66270 1267293 2186.3
 #
-#                              Df Sum of Sq     RSS    AIC
-# - charlson_comorbidity_index  2        56 1325950 3004.2
-# <none>                                    1325894 3008.2
-# - as.factor(sex)              1     18713 1344607 3011.3
-# - as.factor(hospital)         3     42960 1368854 3013.8
-# - age                         1    310429 1636323 3082.9
+# Step:  AIC=2168.01
+# result_value ~ age + as.factor(sex) + charlson_comorbidity_index
 #
-# Step:  AIC=3004.18
-# result_value ~ age + as.factor(sex) + as.factor(hospital)
-#
-#                       Df Sum of Sq     RSS    AIC
-# <none>                             1325950 3004.2
-# - as.factor(sex)       1     18682 1344632 3007.3
-# - as.factor(hospital)  3     43038 1368989 3009.8
-# - age                  1    311788 1637739 3079.3
+# Df Sum of Sq     RSS    AIC
+# - charlson_comorbidity_index  2      1891 1209391 2164.4
+# <none>                                    1207501 2168.0
+# - age                         1     23180 1230681 2170.9
+# - as.factor(sex)              1     67949 1275449 2180.0
 #
 # Answer: using step-wise regression to select variables and evaluate the model, the model with optimal AIC is as above.
